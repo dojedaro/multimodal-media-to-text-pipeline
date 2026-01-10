@@ -98,7 +98,3 @@ Consider exporting results to JSON for clean reuse:
 - A clean CLI wrapper: `python main.py --url ... --translate ko --factcheck`
 
 ---
-
-## 📜 License
-
-MIT License
