@@ -1,10 +1,10 @@
-# 🎞️ Multimodal Media-to-Text Pipeline (ASR + OCR + Translation + Optional Fact-Check)
+# 🎞️ Multimodal Media-to-Text Pipeline (ASR + OCR + Translation + OFact-Check)
 
 A Python notebook that converts short video clips into **structured text outputs** by combining:
 - **Speech transcription (ASR)** with Whisper
 - **On-screen text extraction (OCR)** with Tesseract
 - **Translation** of extracted text (optional)
-- **Search query generation + source retrieval** for verification (optional)
+- **Search query generation + source retrieval** for verification
 
 This is useful for turning short-form content into readable text for: summarization, indexing, translation, and basic verification workflows.
 
