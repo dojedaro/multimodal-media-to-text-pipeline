@@ -1,60 +1,78 @@
-# 🎞️ Multimodal Media-to-Text Pipeline (ASR + OCR + Translation + OFact-Check)
+🎞️ Multimodal Media-to-Text Pipeline (ASR · OCR · Translation · Retrieval)
 
-A Python notebook that converts short video clips into **structured text outputs** by combining:
-- **Speech transcription (ASR)** with Whisper
-- **On-screen text extraction (OCR)** with Tesseract
-- **Translation** of extracted text (optional)
-- **Search query generation + source retrieval** for verification
+An end-to-end **multimodal AI pipeline** that converts short-form video clips into structured text outputs by combining:
 
-This is useful for turning short-form content into readable text for: summarization, indexing, translation, and basic verification workflows.
+- Speech transcription (ASR)
+- On-screen text extraction (OCR)
+- Optional machine translation
+- LLM-assisted query generation and external source retrieval
+
+The system is designed to transform short video content into readable, reusable text for
+**summarization, indexing, translation, and basic verification workflows**.
 
 ---
 
 ## ✅ Features
 
-### 1) Download a short video clip
-- Uses `yt-dlp` + `ffmpeg` to download a lightweight segment
-- Uses `moviepy` to cut a smaller subclip for faster processing
+### 1) Video Ingestion & Preprocessing
+- Downloads short video segments using `yt-dlp` and `ffmpeg`
+- Extracts lightweight subclips with `moviepy` for faster processing
 
 ### 2) Speech → Text (ASR)
-- Runs OpenAI Whisper (`base`) to generate a transcript from audio
+- Transcribes audio using **OpenAI Whisper (base)**
+- Produces a full spoken-text transcript from video audio
 
 ### 3) Frame → Text (OCR)
 - Extracts frames using `opencv-python`
-- Crops subtitle regions and preprocesses:
-  - grayscale
-  - thresholding for higher contrast
-- Runs OCR via `pytesseract`
+- Crops subtitle regions and applies preprocessing:
+  - Grayscale conversion
+  - Thresholding for contrast enhancement
+- Performs OCR using **Tesseract (pytesseract)**
 
 ### 4) Translation (Optional)
 - Translates extracted text into a target language (example: English → Korean)
-- Note: different translation methods vary in quality; for production use, prefer stable APIs or well-evaluated open models.
+- Notes:
+  - Translation quality varies by backend
+  - For production use, prefer stable APIs or well-evaluated open models
 
-### 5) Verification Helpers (Optional)
-- Generates a search query from transcript text (`transformers` with `google/flan-t5-small`)
-- Retrieves top source links via SerpAPI (Google results)
+### 5) Retrieval & Verification Helpers (Optional)
+- Generates search queries from transcript text using a lightweight LLM
+  (`google/flan-t5-small`)
+- Retrieves top external sources via **SerpAPI (Google Search)**
+- Surfaces links and snippets for downstream human review
 
 ---
 
 ## 🧱 Tech Stack
 
-- Video: `yt-dlp`, `ffmpeg`, `moviepy`
-- Frames/OCR: `opencv-python`, `pytesseract`, `tesseract-ocr`
-- Transcription: `openai-whisper`
-- Query generation: `transformers` + `google/flan-t5-small`
-- Search (optional): `serpapi` / `google-search-results`
-- Translation (optional): `googletrans` (demo) or other translation backends
+**Video**
+- yt-dlp, ffmpeg, moviepy
+
+**Vision / OCR**
+- opencv-python, pytesseract, tesseract-ocr
+
+**Speech**
+- openai-whisper
+
+**NLP / LLMs**
+- Hugging Face Transformers
+- google/flan-t5-small
+
+**Retrieval**
+- serpapi, google-search-results
+
+**Translation (optional)**
+- googletrans (demo) or alternative translation backends
 
 ---
-
 ## 🔐 Environment Variables
 
-If using SerpAPI for search:
-- `SERPAPI_API_KEY`
+If using SerpAPI for external search:
 
-Do not hardcode keys inside notebooks.
+```bash
+SERPAPI_API_KEY=your_api_key_here
 
----
+```
 
 ## ⚠️ Notes / Limitations
 
@@ -95,6 +113,6 @@ Consider exporting results to JSON for clean reuse:
 - Automatic subtitle-region detection (instead of fixed cropping)
 - Better OCR preprocessing (adaptive thresholding, morphology, EasyOCR alternative)
 - Claim extraction + evidence ranking for verification
-- A clean CLI wrapper: `python main.py --url ... --translate ko --factcheck`
+- A clean CLI wrapper: `python main.py --url ... --translate ko --search`
 
 ---
