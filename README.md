@@ -1,118 +1,65 @@
-🎞️ Multimodal Media-to-Text Pipeline (ASR · OCR · Translation · Retrieval)
+# Multimodal Media-to-Text Pipeline
 
-An end-to-end **multimodal AI pipeline** that converts short-form video clips into structured text outputs by combining:
+**Turning short videos into text with speech recognition (Whisper), on-screen text recognition (Tesseract), translation and source search, run end to end on real social-media clips, with each stage's actual output, including the ones that failed.**
 
-- Speech transcription (ASR)
-- On-screen text extraction (OCR)
-- Optional machine translation
-- LLM-assisted query generation and external source retrieval
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dojedaro/multimodal-media-to-text-pipeline/blob/main/multimodal_media_to_text_pipeline.ipynb)
+[![Notebook checks](https://github.com/dojedaro/multimodal-media-to-text-pipeline/actions/workflows/notebooks.yml/badge.svg)](https://github.com/dojedaro/multimodal-media-to-text-pipeline/actions/workflows/notebooks.yml)
 
-The system is designed to transform short video content into readable, reusable text for
-**summarization, indexing, translation, and basic verification workflows**.
+## Results: what each stage produced
 
----
+Input: two short public clips of a Canadian political interview, downloaded with `yt-dlp`.
 
-## ✅ Features
+| Stage | Tool | Output on the real clip | Verdict |
+|---|---|---|---|
+| Speech to text | Whisper `base` (CPU) | A full, readable transcript of the clip | **Works.** Proper names suffer: "Poilievre" came out as "Polly Ev" |
+| On-screen text | OpenCV crop of the subtitle band, grayscale + threshold, Tesseract | One word: "now" | **Failed.** Burned-in captions on moving video defeat a fixed crop and a fixed threshold |
+| Translation | `googletrans` | "now" → "조선민주주의인민공화국" ("Democratic People's Republic of Korea") | **Failed badly**, and silently. The unofficial client returns confident nonsense |
+| Search query | `flan-t5-small` | Echoed the transcript back instead of a query | **Failed.** The model is too small to follow the instruction |
+| Source search | SerpAPI (Google) | Top result: the speaker's own Facebook post repeating the claim | **Works as search, fails as verification.** The best match for a claim is often its source |
 
-### 1) Video Ingestion & Preprocessing
-- Downloads short video segments using `yt-dlp` and `ffmpeg`
-- Extracts lightweight subclips with `moviepy` for faster processing
+**What this taught me:** the pipeline ran without a single error, yet three of five stages produced
+garbage. Each stage needs its own check (OCR confidence, a back-translation test, a query that
+must be shorter than its input, a "does the source differ from the speaker?" rule) instead of
+trusting that a run that finished is a run that worked.
 
-### 2) Speech → Text (ASR)
-- Transcribes audio using **OpenAI Whisper (base)**
-- Produces a full spoken-text transcript from video audio
+## How it works
 
-### 3) Frame → Text (OCR)
-- Extracts frames using `opencv-python`
-- Crops subtitle regions and applies preprocessing:
-  - Grayscale conversion
-  - Thresholding for contrast enhancement
-- Performs OCR using **Tesseract (pytesseract)**
-
-### 4) Translation (Optional)
-- Translates extracted text into a target language (example: English → Korean)
-- Notes:
-  - Translation quality varies by backend
-  - For production use, prefer stable APIs or well-evaluated open models
-
-### 5) Retrieval & Verification Helpers (Optional)
-- Generates search queries from transcript text using a lightweight LLM
-  (`google/flan-t5-small`)
-- Retrieves top external sources via **SerpAPI (Google Search)**
-- Surfaces links and snippets for downstream human review
-
----
-
-## 🧱 Tech Stack
-
-**Video**
-- yt-dlp, ffmpeg, moviepy
-
-**Vision / OCR**
-- opencv-python, pytesseract, tesseract-ocr
-
-**Speech**
-- openai-whisper
-
-**NLP / LLMs**
-- Hugging Face Transformers
-- google/flan-t5-small
-
-**Retrieval**
-- serpapi, google-search-results
-
-**Translation (optional)**
-- googletrans (demo) or alternative translation backends
-
----
-## 🔐 Environment Variables
-
-If using SerpAPI for external search:
-
-```bash
-SERPAPI_API_KEY=your_api_key_here
-
+```mermaid
+flowchart LR
+    V[Video URL] --> Y[yt-dlp + ffmpeg]
+    Y --> M[moviepy: cut a<br/>short subclip]
+    M --> A[audio] --> W[Whisper base] --> T[transcript]
+    M --> F[frames, OpenCV] --> C[crop subtitle band<br/>gray + threshold] --> O[Tesseract OCR]
+    O --> TR[googletrans]
+    T --> Q[flan-t5-small:<br/>search query]
+    Q --> S[SerpAPI: top results<br/>for human review]
 ```
 
-## ⚠️ Notes / Limitations
+## Run it
 
-- OCR quality depends heavily on subtitle size, contrast, and video compression.
-- Whisper output may include transcription errors (especially names/numbers).
-- Translation quality depends on the backend (demo translators may be inconsistent).
-- Verification search retrieves sources but does not guarantee correctness—always review sources critically.
+Runs on Google Colab; `ffmpeg` and `tesseract-ocr` are system packages the first cell installs with
+`apt`.
 
----
+```bash
+pip install -r requirements.txt
+jupyter notebook multimodal_media_to_text_pipeline.ipynb
+```
 
-## ▶️ How to Run
+The search stage needs a SerpAPI key, which the notebook asks for with `getpass`.
 
-1) Install dependencies (see notebook cells).  
-2) Provide a video URL.  
-3) Run the pipeline:
-- download → clip → frames → OCR
-- transcription
-- optional translation
-- optional search + source retrieval
+## Stack
 
----
+Python, OpenAI Whisper, OpenCV, Tesseract (pytesseract), moviepy, yt-dlp, Hugging Face Transformers
+(Flan-T5), googletrans, SerpAPI.
 
-## 🗂️ Suggested Outputs (Recommended)
+## Next steps
 
-Consider exporting results to JSON for clean reuse:
+- OCR: detect text regions (EAST or PaddleOCR) instead of a fixed crop, and keep only results above a
+  confidence threshold.
+- Translation: an official API or an open model such as NLLB, plus a back-translation sanity check.
+- Replace Flan-T5-small with an instruction-following LLM for query writing, and rank sources by
+  independence from the speaker, not just relevance.
 
-- `transcript`
-- `ocr_text`
-- `translations`
-- `generated_search_query`
-- `retrieved_sources` (title/snippet/url)
-- `video_metadata` (url, timestamps, clip length)
+## License
 
----
-
-## 🚀 Improvement Ideas
-
-- Automatic subtitle-region detection (instead of fixed cropping)
-- Better OCR preprocessing (adaptive thresholding, morphology, EasyOCR alternative)
-- Claim extraction + evidence ranking for verification
-- A clean CLI wrapper: `python main.py --url ... --translate ko --search`
-
----
+MIT
